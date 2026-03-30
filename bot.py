@@ -20,7 +20,7 @@ def keep_alive():
     t.start()
 
 # --- CONFIGURATION ---
-API_TOKEN = '8768167829:AAFlWONi10gcAG-m-V7yrDXOcLLQ1zPWo_s' # @BotFather wala token
+API_TOKEN = '8768167829:AAFFWPJAL-KuL5_allk65pZKNNmxYsY5qoU' # @BotFather wala token
 ADMIN_ID = '8074231185'    # @userinfobot wali ID
 bot = telebot.TeleBot(API_TOKEN)
 
