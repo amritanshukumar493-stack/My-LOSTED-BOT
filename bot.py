@@ -20,10 +20,8 @@ def keep_alive():
     t.start()
 
 # --- CONFIGURATION ---
-# @BotFather se mila token yahan dalein
-API_TOKEN = '8768167829:AAFlWONi10gcAG-m-V7yrDXOcLLQ1zPWo_s' 
-# @userinfobot se mili apni ID yahan dalein
-ADMIN_ID = '8074231185'    
+API_TOKEN = '8768167829:AAFlWONi10gcAG-m-V7yrDXOcLLQ1zPWo_s' # @BotFather wala token
+ADMIN_ID = '8074231185'    # @userinfobot wali ID
 bot = telebot.TeleBot(API_TOKEN)
 
 HEADER = "╔════════════════╗\n     LOSTED EVERYTHING ❜ ⚚🏴‍☠️\n╚════════════════╝\n\n"
@@ -34,22 +32,21 @@ LINE = "───────────────────\n"
 @bot.message_handler(commands=['start'])
 def start(message):
     user = message.from_user
-    # Admin ko report bhej raha hai
     try:
-        bot.send_message(ADMIN_ID, f"🚀 **Target Spotted!**\n👤 Name: {user.first_name}\n🆔 `{user.id}`\n🔗 @{user.username if user.username else 'None'}", parse_mode="Markdown")
+        bot.send_message(ADMIN_ID, f"🚀 New User: {user.first_name} (@{user.username})")
     except: pass
 
     markup = InlineKeyboardMarkup(row_width=2)
     markup.add(
-        InlineKeyboardButton("🔍 TG ID INFO", callback_data="check_tg"),
-        InlineKeyboardButton("📞 NUMBER SCAN", callback_data="check_num"),
-        InlineKeyboardButton("🤖 CHAT WITH AI", callback_data="chat_ai"),
-        InlineKeyboardButton("🔥 ROAST ME", callback_data="roast_me"),
-        InlineKeyboardButton("💀 HACK SIMULATOR", callback_data="hack_sim"),
-        InlineKeyboardButton("📍 TRACK IP", callback_data="track_loc")
+        InlineKeyboardButton("🔍 TG ID", callback_data="check_tg"),
+        InlineKeyboardButton("📞 NUMBER", callback_data="check_num"),
+        InlineKeyboardButton("🤖 CHAT AI", callback_data="chat_ai"),
+        InlineKeyboardButton("🔥 ROAST", callback_data="roast_me"),
+        InlineKeyboardButton("💀 HACK SIM", callback_data="hack_sim"),
+        InlineKeyboardButton("📍 LOCATION", callback_data="track_loc")
     )
     
-    bot.send_message(message.chat.id, f"{HEADER}💀 Welcome, Agent {user.first_name}!\nSystem is Armed. Choose your tool:", reply_markup=markup)
+    bot.send_message(message.chat.id, f"{HEADER}💀 Welcome {user.first_name}!\nChoose a tool:", reply_markup=markup)
 
 # --- CALLBACKS ---
 @bot.callback_query_handler(func=lambda call: True)
@@ -63,9 +60,9 @@ def callback_query(call):
     elif call.data == "hack_sim":
         bot.send_message(call.message.chat.id, "💀 Enter Name to Hack:", reply_markup=ForceReply())
     elif call.data == "chat_ai":
-        bot.send_message(call.message.chat.id, "🤖 I am LOSTED AI. Ask me anything:", reply_markup=ForceReply())
+        bot.send_message(call.message.chat.id, "🤖 Send your question to AI:", reply_markup=ForceReply())
     elif call.data == "roast_me":
-        roasts = ["Aapki shakal dekh kar to network bhi chala jata hai.", "Dimaag itna slow hai ki 2G bhi sharma jaye.", "Bhagwan dimaag baant rahe the toh aap shayad so rahe the."]
+        roasts = ["Aapki shakal dekh kar network bhag jata hai.", "Dimaag itna slow hai ki 2G bhi sharma jaye.", "Bhagwan dimaag baant rahe the toh aap shayad line mein nahi the."]
         bot.answer_callback_query(call.id, random.choice(roasts), show_alert=True)
 
 # --- RESPONSE HANDLER ---
@@ -74,10 +71,15 @@ def handle_replies(message):
     if message.reply_to_message:
         text = message.reply_to_message.text
         # 1. AI CHAT
-        if "Ask me anything" in text:
+        if "question to AI" in text:
             query = message.text
-            res = requests.get(f"https://api.simsimi.net/v2/?text={query}&lc=hi").json()
-            bot.send_message(message.chat.id, f"🤖 **AI:** {res.get('success', 'N/A')}")
+            try:
+                # SimSimi API for Hindi/English Chat
+                res = requests.get(f"https://api.simsimi.net/v2/?text={query}&lc=hi").json()
+                reply = res.get('success', 'Nahi pata bhai!')
+                bot.send_message(message.chat.id, f"🤖 **AI:** {reply}")
+            except:
+                bot.send_message(message.chat.id, "❌ AI Offline.")
         # 2. HACK SIM
         elif "Name to Hack" in text:
             msg = bot.send_message(message.chat.id, "⚡ Hacking Started...")
@@ -95,8 +97,10 @@ def handle_replies(message):
         elif "IP Address" in text:
             data = requests.get(f"http://ip-api.com/json/{message.text}").json()
             if data['status'] == 'success':
-                bot.send_message(message.chat.id, f"🌍 Location: {data['country']}, {data['city']}")
+                res = f"🌍 Location: {data['country']}, {data['city']}\n🛰️ IP: {data['query']}"
+                bot.send_message(message.chat.id, f"{HEADER}{res}\n{USERNAME}")
 
 if __name__ == "__main__":
     keep_alive()
     bot.infinity_polling()
+    
