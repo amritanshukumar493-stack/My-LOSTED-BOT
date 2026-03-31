@@ -1,111 +1,110 @@
 import telebot
 import requests
-import time
-from flask import Flask
+import os
+from telebot import types
 from threading import Thread
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, ForceReply
+from flask import Flask
 
-# --- FAST WEB SERVER (For Render 24/7) ---
+# --- CONFIGURATION ---
+API_TOKEN = '8768167829:AAFuCKoD8_TMkg8Wk_KsNfrsy10RiD-d4dI'
+CHANNEL_ID = '@hackedanurag'
+OWNER_ID = 8074231185
+BOT_NAME = "⬎̸ 𝐋𝚶𝛅𝚻𝚬𝐃 𝚬𝐕𝚬𝐑𝚼𝚻𝚮𝚰𝚴𝐆 ❜ ⚚"
+
+bot = telebot.TeleBot(API_TOKEN)
 app = Flask('')
+
+# --- APIS ---
+TG_API = "https://tg-2-num-api-org.vercel.app/api/search?userid="
+NUM_API = "https://yash-code-with-ai.alphamovies.workers.dev/?num={}&key=7189814021"
+
 @app.route('/')
-def home(): return "LOSTED OSINT BOT IS LIVE"
+def home():
+    return "Bot is Running 24/7"
 
-def run(): app.run(host='0.0.0.0', port=8080)
-def keep_alive(): Thread(target=run).start()
+def run_flask():
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000)))
 
-# --- CONFIGURATION (NAYA TOKEN SET HAI) ---
-API_TOKEN = '8727697765:AAE6qBSs4cOFaRaHXPYizUneIIfn7afWY54' 
-ADMIN_ID = '8074231185'
-CHANNEL_ID = '@hackedanurag' 
-bot = telebot.TeleBot(API_TOKEN, threaded=True)
-
-# --- STYLISH LABELS ---
-NAME_TAG = "⬎̸ 𝐋𝚶𝛅𝚻𝚬𝐃 𝚬𝐕𝚬𝐑𝚼𝚻𝚮𝚰𝚴𝐆 ❜ ⚚"
-USER_TAG = "@LOSTED_EVERx"
-LINE = "───────────────────\n"
-
-# --- CHECK JOIN FUNCTION ---
-def is_joined(user_id):
+def is_subscribed(user_id):
     try:
-        member = bot.get_chat_member(CHANNEL_ID, user_id)
-        return member.status in ['member', 'administrator', 'creator']
-    except: return True
+        status = bot.get_chat_member(CHANNEL_ID, user_id).status
+        return status in ['member', 'administrator', 'creator']
+    except:
+        return False
 
-# --- START COMMAND ---
 @bot.message_handler(commands=['start'])
 def start(message):
-    user_id = message.from_user.id
-    if not is_joined(user_id):
-        markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("📢 JOIN GROUP", url="https://t.me/hackedanurag"))
-        markup.add(InlineKeyboardButton("✅ VERIFY", callback_data="verify"))
-        bot.send_message(message.chat.id, f"{NAME_TAG}\n\n⚠️ **Access Denied!**\nJoin @hackedanurag to use this bot.", reply_markup=markup, parse_mode="Markdown")
+    if not is_subscribed(message.from_user.id):
+        markup = types.InlineKeyboardMarkup()
+        btn = types.InlineKeyboardButton("📢 Join Channel", url=f"https://t.me/{CHANNEL_ID[1:]}")
+        markup.add(btn)
+        bot.send_message(message.chat.id, f"⚠️ **Access Denied!**\n\nPehle {CHANNEL_ID} join kar tabhi chalega.", reply_markup=markup, parse_mode="Markdown")
         return
 
-    markup = InlineKeyboardMarkup(row_width=2)
-    markup.add(
-        InlineKeyboardButton("🔍 TG ID INFO", callback_data="tg"),
-        InlineKeyboardButton("📞 NUMBER SCAN", callback_data="num"),
-        InlineKeyboardButton("💬 OUR GROUP", url="https://t.me/hackedanurag")
-    )
-    bot.send_message(message.chat.id, f"{NAME_TAG}\n{USER_TAG}\n\n💀 **Agent Connected!**\nNaya Token Activated. Select tool:", reply_markup=markup)
-
-# --- GC & DM COMMANDS (/tg and /num) ---
-@bot.message_handler(commands=['tg', 'num'])
-def handle_commands(message):
-    if not is_joined(message.from_user.id):
-        bot.reply_to(message, "❌ Join @hackedanurag first!")
-        return
-
-    markup = InlineKeyboardMarkup()
-    if "tg" in message.text:
-        markup.add(InlineKeyboardButton("🔍 ENTER TG ID / USERNAME", callback_data="tg"))
-        bot.send_message(message.chat.id, f"{NAME_TAG}\nClick to start Telegram Scan:", reply_markup=markup)
-    else:
-        markup.add(InlineKeyboardButton("📞 ENTER MOBILE NUMBER", callback_data="num"))
-        bot.send_message(message.chat.id, f"{NAME_TAG}\nClick to start Mobile Scan:", reply_markup=markup)
-
-# --- BUTTONS CALLBACK ---
-@bot.callback_query_handler(func=lambda call: True)
-def handle_query(call):
-    if call.data == "verify": start(call.message)
-    elif not is_joined(call.from_user.id):
-        bot.answer_callback_query(call.id, "❌ Join Group First!", show_alert=True)
-        return
-
-    chat_id = call.message.chat.id
-    if call.data == "tg":
-        bot.send_message(chat_id, "🔍 **TG ID:** Enter ID or Username (Reply to this):", reply_markup=ForceReply(selective=True))
-    elif call.data == "num":
-        bot.send_message(chat_id, "📞 **Num Scan:** Enter Mobile Number (Reply to this):", reply_markup=ForceReply(selective=True))
-
-# --- MAIN RESPONSE HANDLER ---
-@bot.message_handler(func=lambda message: True)
-def main_handler(message):
-    if not is_joined(message.from_user.id): return
+    markup = types.InlineKeyboardMarkup(row_width=2)
+    btn1 = types.InlineKeyboardButton("🔍 TG SEARCH", callback_data="tg_info")
+    btn2 = types.InlineKeyboardButton("📞 NUM SEARCH", callback_data="num_info")
+    markup.add(btn1, btn2)
     
-    if message.reply_to_message:
-        text = message.reply_to_message.text
-        
-        # TG ID Search Logic
-        if "TG ID" in text:
-            msg = bot.reply_to(message, "🛰️ *Accessing Telegram Database...*", parse_mode="Markdown")
-            try:
-                res = requests.get(f"https://tg-2-num-api-org.vercel.app/api/search?userid={message.text}").text
-                bot.edit_message_text(f"{NAME_TAG}\n{LINE}{res}\n{LINE}{USER_TAG}", message.chat.id, msg.message_id)
-            except: bot.edit_message_text("❌ Database Timeout.", message.chat.id, msg.message_id)
+    welcome = (f"✨ **{BOT_NAME}**\n"
+               f"━━━━━━━━━━━━━━━━━━━━\n"
+               f"Welcome! Main ID aur Number dono nikal sakta hoon.\n\n"
+               f"Choose an option below:")
+    bot.send_message(message.chat.id, welcome, reply_markup=markup, parse_mode="Markdown")
 
-        # Number Scan Logic
-        elif "Num Scan" in text:
-            msg = bot.reply_to(message, "📡 *Scanning Mobile Records...*", parse_mode="Markdown")
-            try:
-                res = requests.get(f"https://yash-code-with-ai.alphamovies.workers.dev/?num={message.text}&key=7189814021").text
-                bot.edit_message_text(f"{NAME_TAG}\n{LINE}{res}\n{LINE}{USER_TAG}", message.chat.id, msg.message_id)
-            except: bot.edit_message_text("❌ Scan Failed.", message.chat.id, msg.message_id)
+@bot.callback_query_handler(func=lambda call: True)
+def callback_query(call):
+    if call.data == "tg_info":
+        msg = bot.send_message(call.message.chat.id, "👤 **Enter Telegram ID or Username:**")
+        bot.register_next_step_handler(msg, get_tg_info)
+    elif call.data == "num_info":
+        msg = bot.send_message(call.message.chat.id, "📱 **Enter Mobile Number (With Code):**")
+        bot.register_next_step_handler(msg, get_num_info)
+
+def get_tg_info(message):
+    query = message.text
+    wait = bot.send_message(message.chat.id, "🔄 **Fetching TG Data...**")
+    try:
+        res = requests.get(TG_API + query).json()
+        if res.get("status"):
+            data = res.get("data", {})
+            text = (f"⬎̸ 𝐋𝚶𝛅𝚻𝚬𝐃 𝐓𝐆 𝐈𝚴𝐅𝐎 ❜ ⚡\n"
+                    f"━━━━━━━━━━━━━━━━━━━\n"
+                    f"🆔 **User ID:** `{data.get('id')}`\n"
+                    f"👤 **Name:** `{data.get('first_name')}`\n"
+                    f"🏷 **Username:** @{data.get('username')}\n"
+                    f"📞 **Linked Num:** `{data.get('phone')}`\n"
+                    f"━━━━━━━━━━━━━━━━━━━")
+            bot.edit_message_text(text, message.chat.id, wait.message_id, parse_mode="Markdown")
+        else:
+            bot.edit_message_text("❌ No data found for this ID.", message.chat.id, wait.message_id)
+    except:
+        bot.edit_message_text("❌ API Error or Invalid ID.", message.chat.id, wait.message_id)
+
+def get_num_info(message):
+    num = message.text
+    wait = bot.send_message(message.chat.id, "🔄 **Scanning Database...**")
+    try:
+        res = requests.get(NUM_API.format(num)).json()
+        if res.get("status") and res.get("data"):
+            u = res["data"][0]
+            text = (f"⬎̸ 𝐋𝚶𝛅𝚻𝚬𝐃 𝚴𝐔𝐌 𝐈𝚴𝐅𝐎 ❜ 🕵️\n"
+                    f"━━━━━━━━━━━━━━━━━━━\n"
+                    f"👤 **Name:** `{u.get('name')}`\n"
+                    f"👨‍🍼 **Father:** `{u.get('father_name')}`\n"
+                    f"🏠 **Address:** `{u.get('address')}`\n"
+                    f"📱 **Mobile:** `{u.get('mobile')}`\n"
+                    f"📍 **Pincode:** `{u.get('pincode')}`\n"
+                    f"━━━━━━━━━━━━━━━━━━━")
+            bot.edit_message_text(text, message.chat.id, wait.message_id, parse_mode="Markdown")
+        else:
+            bot.edit_message_text("❌ Number not found in database.", message.chat.id, wait.message_id)
+    except:
+        bot.edit_message_text("❌ API Server Error.", message.chat.id, wait.message_id)
 
 if __name__ == "__main__":
-    keep_alive()
-    bot.remove_webhook() # Purane ghost connections khatam karne ke liye
-    time.sleep(1)
-    bot.infinity_polling(timeout=20, long_polling_timeout=10)
-    
+    t = Thread(target=run_flask)
+    t.start()
+    print("Bot is Starting...")
+    bot.infinity_polling()
+        
