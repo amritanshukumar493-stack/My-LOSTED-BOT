@@ -6,7 +6,7 @@ from threading import Thread
 from flask import Flask
 
 # --- CONFIGURATION ---
-API_TOKEN = '8727697765:AAGsFKLIlv06gfIQGvihwtn4Thj3S3HanCk'
+API_TOKEN = '8727697765:AAGYQCHnl-Hlw8b0eUwHSDPLv7Lh9lvRJK4'
 CHANNEL_ID = '@hackedanurag'
 BOT_NAME = "⬎̸ 𝐋𝚶𝛅𝚻𝚬𝐃 𝚬𝐕𝚬𝐑𝚼𝚻𝚮𝚰𝚴𝐆 ❜ ⚚"
 
@@ -31,7 +31,7 @@ def is_subscribed(user_id):
     except:
         return True 
 
-# --- HANDLERS ---
+# --- MAIN HANDLERS ---
 
 @bot.message_handler(commands=['start'])
 def start(message):
@@ -39,32 +39,15 @@ def start(message):
         markup = types.InlineKeyboardMarkup()
         btn = types.InlineKeyboardButton("📢 Join Channel", url=f"https://t.me/{CHANNEL_ID[1:]}")
         markup.add(btn)
-        bot.reply_to(message, f"⚠️ **Access Denied!**\n\nPehle {CHANNEL_ID} join karo tabhi access milega.", reply_markup=markup, parse_mode="Markdown")
+        bot.reply_to(message, f"⚠️ **Access Denied!**\n\nPehle {CHANNEL_ID} join karo.", reply_markup=markup, parse_mode="Markdown")
         return
 
-    welcome = (f"✨ **{BOT_NAME}**\n"
-               f"━━━━━━━━━━━━━━━━━━━━\n"
-               f"Welcome! Use these commands in GC or Private:\n\n"
-               f"🔍 `/tg` - For Telegram Search\n"
-               f"📞 `/num` - For Number Search")
-    bot.reply_to(message, welcome, parse_mode="Markdown")
-
-@bot.message_handler(commands=['tg', 'num'])
-def handle_commands(message):
-    if not is_subscribed(message.from_user.id): return
-
-    cmd = message.text.split()[0][1:] # 'tg' or 'num'
-    markup = types.InlineKeyboardMarkup()
+    markup = types.InlineKeyboardMarkup(row_width=2)
+    btn1 = types.InlineKeyboardButton("🔍 TG SEARCH", callback_data="tg_info")
+    btn2 = types.InlineKeyboardButton("📞 NUM SEARCH", callback_data="num_info")
+    markup.add(btn1, btn2)
     
-    if cmd == 'tg':
-        btn = types.InlineKeyboardButton("🔍 SEARCH TG ID", callback_data="tg_info")
-        text = "👤 **Telegram Info nikalne ke liye niche click karein:**"
-    else:
-        btn = types.InlineKeyboardButton("📞 SEARCH NUMBER", callback_data="num_info")
-        text = "📱 **Mobile Number scan karne ke liye niche click karein:**"
-    
-    markup.add(btn)
-    bot.reply_to(message, text, reply_markup=markup, parse_mode="Markdown")
+    bot.reply_to(message, f"✨ **{BOT_NAME}**\n\nChoose an option:", reply_markup=markup, parse_mode="Markdown")
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
@@ -75,29 +58,35 @@ def callback_query(call):
         msg = bot.send_message(call.message.chat.id, "📱 **Enter Mobile Number (With Code):**")
         bot.register_next_step_handler(msg, get_num_info)
 
+# --- TG INFO LOGIC (FIXED) ---
 def get_tg_info(message):
-    query = message.text.replace('@', '')
-    wait = bot.reply_to(message, "🔄 **Fetching TG Data...**")
+    query = message.text.replace('@', '').strip() # @ hatayega aur extra space bhi
+    wait = bot.reply_to(message, "🔄 **Searching TG Database...**")
     try:
-        res = requests.get(TG_API + query).json()
+        # API hit karega
+        response = requests.get(TG_API + query)
+        res = response.json()
+        
         if res.get("status") and res.get("data"):
             d = res["data"]
+            # Formatting stylish result
             text = (f"⬎̸ 𝐋𝚶𝛅𝚻𝚬𝐃 𝐓𝐆 𝐈𝚴𝐅𝐎 ❜ ⚡\n"
                     f"━━━━━━━━━━━━━━━━━━━\n"
-                    f"🆔 **ID:** `{d.get('id')}`\n"
-                    f"👤 **Name:** `{d.get('first_name')}`\n"
-                    f"🏷 **User:** @{d.get('username')}\n"
-                    f"📞 **Phone:** `{d.get('phone')}`\n"
+                    f"🆔 **ID:** `{d.get('id', 'N/A')}`\n"
+                    f"👤 **Name:** `{d.get('first_name', 'N/A')}`\n"
+                    f"🏷 **User:** @{d.get('username', 'None')}\n"
+                    f"📞 **Phone:** `{d.get('phone', 'Hidden')}`\n"
                     f"━━━━━━━━━━━━━━━━━━━")
             bot.edit_message_text(text, message.chat.id, wait.message_id, parse_mode="Markdown")
         else:
-            bot.edit_message_text("❌ No data found for this ID.", message.chat.id, wait.message_id)
-    except:
-        bot.edit_message_text("❌ API Error.", message.chat.id, wait.message_id)
+            bot.edit_message_text("❌ **No data found for this ID/User.**", message.chat.id, wait.message_id, parse_mode="Markdown")
+    except Exception as e:
+        bot.edit_message_text(f"❌ **API Error:** `{str(e)}`", message.chat.id, wait.message_id, parse_mode="Markdown")
 
+# --- NUM INFO LOGIC ---
 def get_num_info(message):
-    num = message.text
-    wait = bot.reply_to(message, "🔄 **Scanning Database...**")
+    num = message.text.strip()
+    wait = bot.reply_to(message, "🔄 **Scanning Number...**")
     try:
         res = requests.get(NUM_API.format(num)).json()
         if res.get("status") and res.get("data"):
@@ -108,16 +97,15 @@ def get_num_info(message):
                     f"👨‍🍼 **Father:** `{u.get('father_name')}`\n"
                     f"🏠 **Address:** `{u.get('address')}`\n"
                     f"📱 **Mobile:** `{u.get('mobile')}`\n"
-                    f"📍 **Pincode:** `{u.get('pincode')}`\n"
                     f"━━━━━━━━━━━━━━━━━━━")
             bot.edit_message_text(text, message.chat.id, wait.message_id, parse_mode="Markdown")
         else:
-            bot.edit_message_text("❌ Data not found.", message.chat.id, wait.message_id)
+            bot.edit_message_text("❌ **Number not in database.**", message.chat.id, wait.message_id)
     except:
-        bot.edit_message_text("❌ API Server Error.", message.chat.id, wait.message_id)
+        bot.edit_message_text("❌ **API Server Error.**", message.chat.id, wait.message_id)
 
 if __name__ == "__main__":
     Thread(target=run_flask).start()
-    print("Bot is Starting...")
+    print("Bot is Running...")
     bot.infinity_polling()
-        
+    
