@@ -6,7 +6,7 @@ from threading import Thread
 from flask import Flask
 
 # --- CONFIGURATION ---
-API_TOKEN = '8768167829:AAFuCKoD8_TMkg8Wk_KsNfrsy10RiD-d4dI'
+API_TOKEN = '8727697765:AAHLToZ1GkaiX9KvS-s5UGo-cqPXaJDfOmc'
 CHANNEL_ID = '@hackedanurag'
 OWNER_ID = 8074231185
 BOT_NAME = "⬎̸ 𝐋𝚶𝛅𝚻𝚬𝐃 𝚬𝐕𝚬𝐑𝚼𝚻𝚮𝚰𝚴𝐆 ❜ ⚚"
